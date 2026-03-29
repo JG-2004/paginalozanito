@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin — La Canasta Verde</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garant:ital,wght@0,600;0,700;1,500&family=Nunito:wght@300;400;500;600;700&family=Caveat:wght@600&display=swap" rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            verde:   { DEFAULT:'#2d6a4f', dark:'#1b4332', light:'#52b788', pale:'#d8f3dc' },
+            naranja: { DEFAULT:'#e76f51' },
+          },
+          fontFamily: {
+            display: ['"Cormorant Garant"','Georgia','serif'],
+            body:    ['"Nunito"','system-ui','sans-serif'],
+          },
+          boxShadow: {
+            card:  '0 4px 24px rgba(45,106,79,0.10)',
+            hover: '0 8px 32px rgba(45,106,79,0.16)',
+            modal: '0 24px 80px rgba(0,0,0,0.25)',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body { font-family:'Nunito',system-ui,sans-serif; }
+
+    /* Modales */
+    .modal-overlay { opacity:0; pointer-events:none; transition:opacity 0.2s; }
+    .modal-overlay.open { opacity:1; pointer-events:all; }
+    .modal-overlay .modal-box { transform:translateY(16px); transition:transform 0.2s; }
+    .modal-overlay.open .modal-box { transform:translateY(0); }
+
+    /* Toggle switch */
+    .toggle-input:checked + .toggle-track { background-color:#52b788; }
+    .toggle-input:checked + .toggle-track .toggle-thumb { transform:translateX(20px); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width:5px; }
+    ::-webkit-scrollbar-track { background:#f9fafb; }
+    ::-webkit-scrollbar-thumb { background:#52b788; border-radius:99px; }
+
+    /* Inputs */
+    .input-cv { transition:border-color 0.2s,background 0.2s; }
+    .input-cv:focus { outline:none; border-color:#52b788; background:white; }
+    .input-cv.error { border-color:#e76f51!important; }
+
+    /* Tabs */
+    .admin-tab { border-bottom:3px solid transparent; transition:all 0.2s; }
+    .admin-tab.active { border-bottom-color:#2d6a4f; color:#2d6a4f; }
+
+    .stock-fill { transition:width 0.4s ease; }
+  </style>
+</head>
+<body class="bg-gray-50 min-h-screen font-body">
+
+  <!-- ═══════════════════════════════════════════════
+       PANTALLA DE LOGIN
+       ═══════════════════════════════════════════════ -->
+  <div id="login-screen" class="fixed inset-0 bg-verde/95 flex items-center justify-center z-50 p-4">
+    <div class="bg-white rounded-3xl p-8 w-full max-w-sm shadow-modal text-center">
+      <div class="text-5xl mb-4">🔒</div>
+      <h2 class="font-display text-2xl mb-1">Panel Admin</h2>
+      <p class="text-gray-400 text-sm mb-6">Ingresá tu contraseña para continuar</p>
+      <div class="flex flex-col gap-3">
+        <input id="login-password" type="password" placeholder="Contraseña"
+               onkeydown="if(event.key==='Enter') Admin.login()"
+               class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-3 text-sm text-center w-full">
+        <span id="login-error" class="text-naranja text-xs hidden">Contraseña incorrecta</span>
+        <button onclick="Admin.login()"
+                class="bg-verde hover:bg-verde-dark text-white font-semibold py-3 rounded-xl transition-colors">
+          Ingresar
+        </button>
+        <a href="index.html" class="text-gray-400 hover:text-gray-600 text-sm transition-colors">← Volver a la tienda</a>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       PANEL ADMIN (visible tras login)
+       ═══════════════════════════════════════════════ -->
+  <div id="admin-app" class="hidden min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <header class="bg-verde shadow-lg shrink-0">
+      <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+        <div class="flex items-center gap-3">
+          <span class="text-3xl">🥬</span>
+          <div>
+            <div class="font-display text-lg text-white leading-tight">La Canasta Verde</div>
+            <div class="text-xs text-verde-light uppercase tracking-widest opacity-80">Panel Administrador</div>
+          </div>
+        </div>
+        <div class="flex items-center gap-2">
+          <a href="index.html" class="hidden sm:block text-white/70 hover:text-white text-xs px-3 py-1.5 rounded-full border border-white/20 hover:border-white/40 transition-all">🛒 Ver tienda</a>
+          <button onclick="Admin.logout()" class="bg-naranja/80 hover:bg-naranja text-white text-xs font-semibold px-3 py-1.5 rounded-full transition-all">Salir</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Tabs de navegación -->
+    <nav class="bg-white border-b-2 border-gray-100 shrink-0 overflow-x-auto">
+      <div class="max-w-5xl mx-auto px-4 flex gap-1">
+        <button class="admin-tab active px-5 py-4 font-semibold text-sm whitespace-nowrap text-gray-700" data-tab="stock"    onclick="Admin.setTab(this)">📦 Stock</button>
+        <button class="admin-tab        px-5 py-4 font-semibold text-sm whitespace-nowrap text-gray-700" data-tab="productos" onclick="Admin.setTab(this)">🌿 Productos</button>
+        <button class="admin-tab        px-5 py-4 font-semibold text-sm whitespace-nowrap text-gray-700" data-tab="pedidos"   onclick="Admin.setTab(this)">📋 Pedidos</button>
+        <button class="admin-tab        px-5 py-4 font-semibold text-sm whitespace-nowrap text-gray-700" data-tab="config"    onclick="Admin.setTab(this)">⚙️ Config</button>
+      </div>
+    </nav>
+
+    <!-- Contenido de tabs -->
+    <main class="flex-1 max-w-5xl mx-auto w-full px-4 py-8">
+
+      <!-- TAB: STOCK -->
+      <div id="tab-stock">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-display text-2xl">Gestión de Stock</h2>
+          <span class="text-sm text-gray-400">Ajustá las cantidades antes de cada venta</span>
+        </div>
+        <div id="stock-list" class="flex flex-col gap-3"></div>
+      </div>
+
+      <!-- TAB: PRODUCTOS -->
+      <div id="tab-productos" class="hidden">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-display text-2xl">Productos</h2>
+          <button onclick="Admin.abrirFormProducto(null)"
+                  class="bg-verde hover:bg-verde-dark text-white text-sm font-semibold px-4 py-2 rounded-xl transition-colors">
+            + Nuevo producto
+          </button>
+        </div>
+        <div id="productos-list" class="flex flex-col gap-3"></div>
+      </div>
+
+      <!-- TAB: PEDIDOS -->
+      <div id="tab-pedidos" class="hidden">
+        <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
+          <h2 class="font-display text-2xl">Pedidos</h2>
+          <select id="filtro-estado" onchange="Admin.cargarPedidos()"
+                  class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-3 py-2 text-sm font-body">
+            <option value="">Todos</option>
+            <option value="pendiente">Pendientes</option>
+            <option value="confirmado">Confirmados</option>
+            <option value="entregado">Entregados</option>
+            <option value="cancelado">Cancelados</option>
+          </select>
+        </div>
+        <div id="pedidos-list" class="flex flex-col gap-3"></div>
+      </div>
+
+      <!-- TAB: CONFIG -->
+      <div id="tab-config" class="hidden">
+        <h2 class="font-display text-2xl mb-6">Configuración de la Tienda</h2>
+        <div class="bg-white rounded-2xl shadow-card p-6 max-w-md flex flex-col gap-5">
+
+          <div class="flex flex-col gap-2">
+            <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Día de venta</label>
+            <div id="dia-picker" class="flex flex-wrap gap-2"></div>
+          </div>
+
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Hora apertura</label>
+              <input id="cfg-hora-inicio" type="time" class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full">
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Hora cierre</label>
+              <input id="cfg-hora-fin" type="time" class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full">
+            </div>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Número WhatsApp</label>
+            <input id="cfg-wsp" type="text" placeholder="51999999999"
+                   class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full">
+            <span class="text-xs text-gray-400">Sin + y con código de país. Ej: 51999999999</span>
+          </div>
+
+          <div class="flex flex-col gap-1">
+            <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Nombre de la tienda</label>
+            <input id="cfg-nombre" type="text" class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full">
+          </div>
+
+          <button onclick="Admin.guardarConfig()"
+                  class="bg-verde hover:bg-verde-dark text-white font-semibold py-3 rounded-xl transition-colors">
+            💾 Guardar configuración
+          </button>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL: Crear / Editar producto
+       ═══════════════════════════════════════════════ -->
+  <div id="modal-producto" class="modal-overlay fixed inset-0 bg-black/55 z-50 flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl p-7 w-full max-w-lg max-h-[90vh] overflow-y-auto relative shadow-modal">
+      <button onclick="Admin.cerrarModal()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl">✕</button>
+      <h2 id="modal-titulo" class="font-display text-2xl mb-5">Nuevo producto</h2>
+
+      <div class="grid grid-cols-2 gap-4">
+
+        <!-- Nombre (fila completa) -->
+        <div class="col-span-2 flex flex-col gap-1">
+          <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Nombre *</label>
+          <input id="prod-nombre" type="text" placeholder="Ej: Tomate cherry"
+                 class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full">
+        </div>
+
+        <!-- URL de imagen (fila completa) -->
+        <div class="col-span-2 flex flex-col gap-1">
+          <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">URL de imagen *</label>
+          <input id="prod-imgurl" type="text" placeholder="https://ejemplo.com/imagen.jpg"
+                 oninput="_previewImagen(this.value)"
+                 class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full">
+          <!-- Preview de la imagen -->
+          <div id="img-preview" class="w-full h-28 bg-gray-100 rounded-xl mt-1 overflow-hidden flex items-center justify-center text-gray-300 text-sm">
+            Vista previa
+          </div>
+        </div>
+
+        <!-- Categoría -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Categoría *</label>
+          <select id="prod-categoria" class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full"></select>
+        </div>
+
+        <!-- Precio -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Precio (S/) *</label>
+          <input id="prod-precio" type="number" step="0.01" min="0" placeholder="2.50"
+                 class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full">
+        </div>
+
+        <!-- Unidad -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Unidad</label>
+          <input id="prod-unidad" type="text" placeholder="kg / pza / x25u / 1/4 kg"
+                 class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full">
+        </div>
+
+        <!-- Stock actual -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Stock actual</label>
+          <input id="prod-stock" type="number" min="0" placeholder="10"
+                 class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full">
+        </div>
+
+        <!-- Stock máximo -->
+        <div class="flex flex-col gap-1">
+          <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Stock máximo</label>
+          <input id="prod-stock-max" type="number" min="1" placeholder="200"
+                 class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full">
+        </div>
+
+        <!-- Descripción (fila completa) -->
+        <div class="col-span-2 flex flex-col gap-1">
+          <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Descripción</label>
+          <textarea id="prod-descripcion" rows="2" placeholder="Descripción breve del producto..."
+                    class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-4 py-2.5 text-sm w-full resize-none"></textarea>
+        </div>
+
+        <!-- Botones -->
+        <div class="col-span-2 flex gap-3 mt-1">
+          <button onclick="Admin.cerrarModal()"
+                  class="border-2 border-gray-200 hover:border-verde text-gray-600 hover:text-verde font-semibold py-2.5 px-5 rounded-xl transition-all text-sm">
+            Cancelar
+          </button>
+          <button id="btn-guardar-prod" onclick="Admin.guardarProducto()"
+                  class="flex-1 bg-verde hover:bg-verde-dark text-white font-semibold py-2.5 rounded-xl transition-colors text-sm">
+            Guardar producto
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- ═══════════════════════════════════════════════
+       MODAL: Detalle de pedido
+       ═══════════════════════════════════════════════ -->
+  <div id="modal-pedido" class="modal-overlay fixed inset-0 bg-black/55 z-50 flex items-center justify-center p-4">
+    <div class="modal-box bg-white rounded-3xl p-7 w-full max-w-md max-h-[90vh] overflow-y-auto relative shadow-modal">
+      <button onclick="Admin.cerrarModalPedido()" class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl">✕</button>
+      <h2 id="pedido-modal-titulo" class="font-display text-2xl mb-4"></h2>
+      <div id="pedido-modal-info" class="text-sm text-gray-600 mb-4 space-y-1 bg-gray-50 rounded-xl p-4"></div>
+      <div id="pedido-modal-items" class="bg-gray-50 rounded-xl p-4 mb-4 flex flex-col gap-1"></div>
+      <div class="flex items-center gap-3">
+        <label class="text-sm font-semibold text-gray-600 shrink-0">Estado:</label>
+        <select id="pedido-modal-estado" onchange="Admin.cambiarEstadoPedido(this)"
+                class="input-cv flex-1 bg-gray-50 border-2 border-gray-200 rounded-xl px-3 py-2 text-sm">
+          <option value="pendiente">Pendiente</option>
+          <option value="confirmado">Confirmado</option>
+          <option value="entregado">Entregado</option>
+          <option value="cancelado">Cancelado</option>
+        </select>
+      </div>
+    </div>
+  </div>
+
+
+  <!-- Toast -->
+  <div id="toast" class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-20 bg-verde text-white px-6 py-3 rounded-full shadow-lg text-sm font-semibold z-[999] transition-transform duration-300 whitespace-nowrap pointer-events-none"></div>
+
+  <script src="js/api.js"></script>
+  <script src="js/admin.js"></script>
+</body>
+</html>

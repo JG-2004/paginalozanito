@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>LOZANITO STORE</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link
+    href="https://fonts.googleapis.com/css2?family=Cormorant+Garant:ital,wght@0,600;0,700;1,500&family=Nunito:wght@400;500;600;700&family=Caveat:wght@600&display=swap"
+    rel="stylesheet">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            verde: { DEFAULT: '#2d6a4f', dark: '#1b4332', light: '#52b788', pale: '#d8f3dc' },
+            crema: '#fefae0',
+            naranja: { DEFAULT: '#e76f51', light: '#f4a261' },
+          },
+          fontFamily: {
+            display: ['"Cormorant Garant"', 'Georgia', 'serif'],
+            body: ['"Nunito"', 'system-ui', 'sans-serif'],
+            hand: ['"Caveat"', 'cursive'],
+          },
+          boxShadow: {
+            card: '0 4px 24px rgba(45,106,79,0.10)',
+            hover: '0 12px 40px rgba(45,106,79,0.18)',
+            modal: '0 24px 80px rgba(0,0,0,0.25)',
+          },
+        }
+      }
+    }
+  </script>
+  <style>
+    body {
+      font-family: 'Nunito', system-ui, sans-serif;
+      background: #fefae0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px
+    }
+
+    ::-webkit-scrollbar-track {
+      background: #fefae0
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: #52b788;
+      border-radius: 9px
+    }
+
+    .hero-curve::after {
+      content: '';
+      position: absolute;
+      bottom: -2px;
+      left: 0;
+      right: 0;
+      height: 48px;
+      background: #fefae0;
+      clip-path: ellipse(55% 100% at 50% 100%)
+    }
+
+    #cart-drawer {
+      transform: translateX(100%);
+      transition: transform 0.3s cubic-bezier(.4, 0, .2, 1)
+    }
+
+    #cart-drawer.open {
+      transform: translateX(0)
+    }
+
+    #cart-overlay {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s
+    }
+
+    #cart-overlay.open {
+      opacity: 1;
+      pointer-events: all
+    }
+
+    #checkout-modal {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s
+    }
+
+    #checkout-modal.open {
+      opacity: 1;
+      pointer-events: all
+    }
+
+    #checkout-modal .modal-box {
+      transform: translateY(20px);
+      transition: transform .25s
+    }
+
+    #checkout-modal.open .modal-box {
+      transform: translateY(0)
+    }
+
+    .product-card {
+      animation: fadeUp .4s ease both
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(14px)
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0)
+      }
+    }
+
+    .product-card:nth-child(1) {
+      animation-delay: .02s
+    }
+
+    .product-card:nth-child(2) {
+      animation-delay: .04s
+    }
+
+    .product-card:nth-child(3) {
+      animation-delay: .06s
+    }
+
+    .product-card:nth-child(4) {
+      animation-delay: .08s
+    }
+
+    .product-card:nth-child(5) {
+      animation-delay: .10s
+    }
+
+    .product-card:nth-child(n+6) {
+      animation-delay: .12s
+    }
+
+    .stock-fill {
+      transition: width .5s ease
+    }
+
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: #e5e7eb;
+      transition: background .3s
+    }
+
+    .step-line.done {
+      background: #2d6a4f
+    }
+
+    .step-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .85rem;
+      font-weight: 700;
+      border: 2px solid #e5e7eb;
+      color: #9ca3af;
+      transition: all .3s
+    }
+
+    .step-circle.active {
+      border-color: #2d6a4f;
+      color: #2d6a4f
+    }
+
+    .step-circle.done {
+      background: #2d6a4f;
+      border-color: #2d6a4f;
+      color: white
+    }
+
+    .input-cv {
+      transition: border-color .2s, background .2s
+    }
+
+    .input-cv:focus {
+      outline: none;
+      border-color: #52b788;
+      background: white
+    }
+
+    .input-cv.error {
+      border-color: #e76f51 !important
+    }
+
+    .line-clamp-2 {
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg)
+      }
+    }
+  </style>
+</head>
+
+<body class="text-gray-800 min-h-screen overflow-x-hidden">
+
+  <!-- ── HEADER ─────────────────────────────────────────── -->
+  <header class="bg-verde sticky top-0 z-40 shadow-lg">
+    <div class="max-w-6xl mx-auto px-4 py-3 flex items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <span class="text-3xl">🥬</span>
+        <div>
+          <div class="font-display text-xl text-white leading-tight">LOZANITO STORE</div>
+          <div class="text-xs text-verde-light tracking-widest uppercase opacity-80">Frutas &amp; Verduras Frescas</div>
+        </div>
+      </div>
+      <div class="flex items-center gap-2">
+        <a href="admin.html"
+          class="hidden sm:inline-flex items-center gap-1 text-white/70 hover:text-white text-xs px-3 py-1.5 rounded-full border border-white/20 hover:border-white/40 transition-all">⚙️
+          Admin</a>
+        <button onclick="Cart.toggle()"
+          class="relative flex items-center gap-2 bg-white/10 hover:bg-white/20 border border-white/25 text-white rounded-full px-4 py-2 text-sm font-semibold transition-all">
+          🛒 <span class="hidden sm:inline">Carrito</span>
+          <span id="cart-badge"
+            class="absolute -top-1.5 -right-1.5 bg-naranja text-white text-xs font-bold min-w-[20px] h-5 rounded-full flex items-center justify-center px-1 hidden">0</span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── HERO ───────────────────────────────────────────── -->
+  <section
+    class="hero-curve relative bg-gradient-to-br from-verde to-verde-dark text-white pt-14 pb-16 px-4 text-center overflow-hidden">
+    <span
+      class="absolute text-[8rem] opacity-[0.06] -top-4 -left-4 -rotate-12 select-none pointer-events-none">🍅</span>
+    <span class="absolute text-[6rem] opacity-[0.06] top-2 -right-2 rotate-12 select-none pointer-events-none">🥕</span>
+    <div id="hero-tag"
+      class="inline-block bg-naranja text-white font-hand text-base px-5 py-1 rounded-full mb-4 -rotate-1">📅
+      Cargando...</div>
+    <h1 class="font-display text-5xl md:text-6xl leading-tight mb-3">Del campo<br><em>a tu mesa</em></h1>
+    <p class="text-white/80 max-w-md mx-auto mb-8">Productos frescos. Stock limitado — ¡no te quedes sin el
+      tuyo!</p>
+    <!-- Countdown -->
+    <!-- <div class="inline-flex flex-col items-center bg-white/10 backdrop-blur border border-white/20 rounded-2xl px-6 py-4 gap-2">
+      <span class="text-xs uppercase tracking-widest opacity-70">Próxima venta en</span>
+      <div class="flex items-start gap-1">
+        <div class="text-center"><span id="cd-days"  class="block font-display text-4xl leading-none">0</span> <span class="text-[0.6rem] uppercase tracking-wider opacity-60">Días</span></div>
+        <span class="text-2xl opacity-40 mt-1">:</span>
+        <div class="text-center"><span id="cd-hours" class="block font-display text-4xl leading-none">00</span><span class="text-[0.6rem] uppercase tracking-wider opacity-60">Horas</span></div>
+        <span class="text-2xl opacity-40 mt-1">:</span>
+        <div class="text-center"><span id="cd-mins"  class="block font-display text-4xl leading-none">00</span><span class="text-[0.6rem] uppercase tracking-wider opacity-60">Min</span></div>
+        <span class="text-2xl opacity-40 mt-1">:</span>
+        <div class="text-center"><span id="cd-secs"  class="block font-display text-4xl leading-none">00</span><span class="text-[0.6rem] uppercase tracking-wider opacity-60">Seg</span></div>
+      </div>
+    </div> -->
+  </section>
+
+  <!-- ── MAIN ───────────────────────────────────────────── -->
+  <main class="max-w-6xl mx-auto px-4 py-10">
+    <div id="filter-bar" class="flex flex-wrap gap-2 mb-8"></div>
+    <div id="loading-state" class="flex flex-col items-center justify-center py-20 gap-4">
+      <span class="text-5xl inline-block" style="animation:spin 1s linear infinite">🌿</span>
+      <p class="text-gray-400">Cargando productos frescos...</p>
+    </div>
+    <div id="empty-state" class="hidden flex-col items-center justify-center py-20 gap-3 text-gray-400">
+      <span class="text-6xl">🥗</span>
+      <p>No hay productos en esta categoría</p>
+    </div>
+    <div id="product-grid" class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4"></div>
+  </main>
+
+  <footer class="bg-verde text-white/70 text-center py-8 text-sm mt-8">
+    <p>Hecho por MUNDO TEC para <span class="font-display text-white">LOZANITO STORE</span> · <span
+        id="footer-horario"></span></p>
+  </footer>
+
+  <!-- ── CART DRAWER ────────────────────────────────────── -->
+  <div id="cart-overlay" onclick="Cart.toggle()" class="fixed inset-0 bg-black/50 z-50"></div>
+  <aside id="cart-drawer"
+    class="fixed top-0 right-0 bottom-0 w-full max-w-[400px] bg-white z-50 flex flex-col shadow-modal">
+    <div class="flex items-center justify-between px-6 py-4 border-b-2 border-gray-100 shrink-0">
+      <h2 class="font-display text-xl">🛒 Tu Carrito <span id="cart-count-header"
+          class="font-body text-sm font-normal text-gray-400">(0 items)</span></h2>
+      <button onclick="Cart.toggle()" class="text-gray-400 hover:text-gray-700 text-2xl leading-none">✕</button>
+    </div>
+    <div class="flex-1 overflow-y-auto px-5 py-4">
+      <div id="cart-empty" class="flex flex-col items-center justify-center h-full gap-3 text-gray-400 py-16">
+        <span class="text-6xl">🥕</span>
+        <p class="font-semibold">Tu carrito está vacío</p>
+        <p class="text-sm opacity-70">Agregá frutas y verduras frescas</p>
+      </div>
+      <div id="cart-items" class="flex flex-col gap-3"></div>
+    </div>
+    <div id="cart-footer" class="hidden px-5 py-4 border-t-2 border-gray-100 shrink-0">
+      <div class="flex justify-between items-center mb-3">
+        <span class="text-gray-600">Total</span>
+        <span id="cart-total" class="font-display text-2xl text-verde">S/0.00</span>
+      </div>
+      <button onclick="Cart.goToCheckout()"
+        class="w-full bg-verde hover:bg-verde-dark text-white font-semibold py-3 rounded-xl transition-colors">
+        Hacer Pedido →
+      </button>
+      <p class="text-center text-xs text-gray-400 mt-2">Te enviamos por WhatsApp para confirmar</p>
+    </div>
+  </aside>
+
+  <!-- ── CHECKOUT MODAL ─────────────────────────────────── -->
+  <div id="checkout-modal"
+    class="fixed inset-0 bg-black/55 z-[60] flex items-end sm:items-center justify-center sm:p-4">
+    <div
+      class="modal-box bg-white rounded-t-3xl sm:rounded-3xl w-full sm:max-w-lg max-h-[92vh] overflow-y-auto p-6 sm:p-7 relative shadow-modal">
+      <button id="modal-close-btn" onclick="Checkout.close()"
+        class="absolute top-5 right-5 text-gray-400 hover:text-gray-700 text-xl">✕</button>
+
+      <!-- Indicador de pasos -->
+      <div class="flex items-center justify-center mb-6">
+        <div class="step-circle active" id="step-1">1</div>
+        <div class="step-line" id="line-1"></div>
+        <div class="step-circle" id="step-2">2</div>
+        <div class="step-line" id="line-2"></div>
+        <div class="step-circle" id="step-3">3</div>
+      </div>
+
+      <!-- PASO 1: Resumen del pedido -->
+      <div id="checkout-paso-1">
+        <h2 class="font-display text-2xl mb-1">Tu pedido</h2>
+        <p class="text-sm text-gray-400 mb-4">Revisá lo que vas a pedir</p>
+        <div id="checkout-items" class="bg-gray-50 rounded-xl p-4 mb-5 flex flex-col gap-1"></div>
+        <button onclick="Checkout.irPaso(2)"
+          class="w-full bg-verde hover:bg-verde-dark text-white font-semibold py-3 rounded-xl transition-colors">
+          Continuar → Mis datos
+        </button>
+      </div>
+
+      <!-- PASO 2: Tipo de entrega + datos del cliente -->
+      <div id="checkout-paso-2" class="hidden">
+        <h2 class="font-display text-2xl mb-1">Tus datos</h2>
+        <p class="text-sm text-gray-400 mb-4">Elegí cómo querés recibir tu pedido</p>
+
+        <!-- ── SELECTOR RECOJO / DELIVERY ─────────────────────
+             Dos tarjetas clickeables: al hacer clic activan
+             el radio oculto y llaman a Checkout.actualizarEntrega() -->
+        <div class="grid grid-cols-2 gap-3 mb-5">
+
+          <!-- Opción: Recojo en tienda -->
+          <label id="card-recojo" class="cursor-pointer rounded-2xl border-2 border-verde bg-verde-pale p-4
+                        flex flex-col items-center gap-1 transition-all select-none"
+            onclick="Checkout.actualizarEntrega()">
+            <input type="radio" name="tipo-entrega" value="recojo" class="sr-only" checked
+              onchange="Checkout.actualizarEntrega()">
+            <span class="text-3xl">🏪</span>
+            <span class="font-bold text-sm text-verde-dark">Recojo</span>
+            <span class="text-xs text-gray-500 text-center">Paso a buscar mi pedido</span>
+            <span class="text-xs font-bold text-verde mt-1">GRATIS</span>
+          </label>
+
+          <!-- Opción: Delivery a domicilio -->
+          <label id="card-delivery" class="cursor-pointer rounded-2xl border-2 border-gray-200 bg-white p-4
+                        flex flex-col items-center gap-1 transition-all select-none"
+            onclick="Checkout.actualizarEntrega()">
+            <input type="radio" name="tipo-entrega" value="delivery" class="sr-only"
+              onchange="Checkout.actualizarEntrega()">
+            <span class="text-3xl">🚚</span>
+            <span class="font-bold text-sm text-gray-700">Delivery</span>
+            <span class="text-xs text-gray-500 text-center">Lo llevamos a tu puerta</span>
+            <span class="text-xs font-bold text-tierra mt-1">+ S/2.00</span>
+          </label>
+
+        </div>
+
+        <!-- ── FORMULARIO DE DATOS ─────────────────────────── -->
+        <div class="flex flex-col gap-3 mb-4">
+
+          <!-- Nombre y Apellido -->
+          <div class="grid grid-cols-2 gap-3">
+            <div class="flex flex-col gap-1">
+              <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Nombre *</label>
+              <input id="inp-nombre" type="text" placeholder="María"
+                class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm w-full">
+              <span id="err-nombre" class="text-naranja text-xs hidden">Obligatorio</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Apellido *</label>
+              <input id="inp-apellido" type="text" placeholder="García"
+                class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm w-full">
+              <span id="err-apellido" class="text-naranja text-xs hidden">Obligatorio</span>
+            </div>
+          </div>
+
+          <!-- Teléfono -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Teléfono / WhatsApp *</label>
+            <input id="inp-telefono" type="tel" placeholder="Ej: 999 123 456"
+              class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm w-full">
+            <span id="err-telefono" class="text-naranja text-xs hidden">Ingresá un teléfono válido</span>
+          </div>
+
+          <!-- Dirección: solo se muestra si elige Delivery -->
+          <div id="bloque-direccion" class="hidden flex flex-col gap-1">
+            <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Dirección de entrega *</label>
+            <input id="inp-direccion" type="text" placeholder="Av. Principal 123, dpto 4B"
+              class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm w-full">
+            <span id="err-direccion" class="text-naranja text-xs hidden">Obligatorio para delivery</span>
+          </div>
+
+          <!-- Localidad / Distrito -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">Distrito / Localidad *</label>
+            <input id="inp-localidad" type="text" placeholder="Ej: Miraflores, Lince..."
+              class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm w-full">
+            <span id="err-localidad" class="text-naranja text-xs hidden">Obligatorio</span>
+          </div>
+
+          <!-- Notas -->
+          <div class="flex flex-col gap-1">
+            <label class="text-xs uppercase tracking-wide font-semibold text-gray-500">
+              Notas <span class="font-normal normal-case text-gray-400">(opcional)</span>
+            </label>
+            <textarea id="inp-notas" rows="2" placeholder="Horario de entrega, referencia, algo a tener en cuenta..."
+              class="input-cv bg-gray-50 border-2 border-gray-200 rounded-xl px-3 py-2.5 text-sm w-full resize-none"></textarea>
+          </div>
+        </div>
+
+        <!-- ── RESUMEN TOTAL CON O SIN DELIVERY ───────────────
+             Se actualiza automáticamente al cambiar la opción -->
+        <div class="bg-gray-50 rounded-xl p-3 mb-4 text-sm flex flex-col gap-1">
+          <div class="flex justify-between text-gray-500">
+            <span>Subtotal productos</span>
+            <span id="resumen-subtotal">S/0.00</span>
+          </div>
+          <!-- Esta fila se oculta/muestra según la opción elegida -->
+          <div id="fila-delivery" class="hidden flex justify-between text-tierra font-medium">
+            <span>🚚 Costo delivery</span>
+            <span>S/2.00</span>
+          </div>
+          <div class="flex justify-between font-bold text-verde text-base border-t border-gray-200 pt-1 mt-1">
+            <span>Total a pagar</span>
+            <span id="resumen-total">S/0.00</span>
+          </div>
+        </div>
+
+        <!-- Botones -->
+        <div class="flex gap-3">
+          <button onclick="Checkout.irPaso(1)"
+            class="border-2 border-gray-200 hover:border-verde text-gray-700 hover:text-verde font-semibold py-3 px-5 rounded-xl transition-all text-sm">
+            ← Volver
+          </button>
+          <button id="btn-confirmar" onclick="Checkout.confirmar()"
+            class="flex-1 bg-verde hover:bg-verde-dark text-white font-semibold py-3 rounded-xl transition-colors">
+            ✓ Confirmar Pedido
+          </button>
+        </div>
+      </div>
+
+      <!-- PASO 3: Confirmación + WhatsApp -->
+      <div id="checkout-paso-3" class="hidden text-center py-4">
+        <div class="text-6xl mb-4">✅</div>
+        <h2 class="font-display text-2xl mb-2">¡Pedido confirmado!</h2>
+        <p id="checkout-success-msg" class="text-gray-500 text-sm leading-relaxed mb-6"></p>
+        <a id="btn-whatsapp" href="#" target="_blank" rel="noopener noreferrer"
+          class="flex items-center justify-center gap-2 w-full bg-[#25D366] hover:bg-[#128C7E] text-white font-semibold py-4 rounded-xl transition-colors text-base mb-3">
+          📲 Enviar pedido por WhatsApp
+        </a>
+        <button onclick="Checkout.close()"
+          class="w-full border-2 border-gray-200 hover:border-verde text-gray-600 hover:text-verde font-semibold py-3 rounded-xl transition-all">
+          Volver a la tienda
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast -->
+  <div id="toast"
+    class="fixed bottom-6 left-1/2 -translate-x-1/2 translate-y-20 bg-verde text-white px-6 py-3 rounded-full shadow-lg text-sm font-semibold z-[999] transition-transform duration-300 whitespace-nowrap pointer-events-none">
+  </div>
+
+  <script src="js/api.js"></script>
+  <script src="js/cart.js"></script>
+  <script src="js/store.js"></script>
+</body>
+
+</html>
